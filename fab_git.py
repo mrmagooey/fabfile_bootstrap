@@ -20,10 +20,12 @@ def git_fix_divergent_remote_git_repository():
     "Useful to fix 'Your branch and origin/master have diverged'"
     run('git reset --hard origin/master')
 
+    
 def git_fix_non_branched_remote_git_repository():
     "Useful to fix 'Not currently on any branch'"
     run('git stash && git checkout master')
 
+    
 def _git_server_name_is_git_remote():
     names = env['roles']
     git_remote_names =  local('git remote',capture=True).split("\n")
@@ -32,6 +34,7 @@ def _git_server_name_is_git_remote():
             return False
     return True
 
+    
 def _module_setup(import_list):
     for fab_module in import_list:
         m = __import__(fab_module)
