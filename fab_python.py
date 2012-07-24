@@ -22,12 +22,10 @@ def _python_install_python_environment(run_local=True):
     Install some minimum elements of the python ecosystem.
     """
     if local:
-        # Check if currently in a virtualenv
-        # Try for easy_install
         try:
             import pip
         except ImportError:
-            if os_name == "Darwin":
+            if os_name != "Windows":
                 with settings(warn_only=True):
                     if local("easy_install pip").failed:
                         print "In order to install pip superuser privileges will be needed."
@@ -39,7 +37,7 @@ def _python_install_python_environment(run_local=True):
         try:
             import virtualenvwrapper
         except ImportError:
-            if os_name == "Darwin":
+            if os_name != "Windows":
                 with settings(warn_only=True):
                     if local("pip install virtualenvwrapper").failed:
                         print "In order to install virtualenvwrapper superuser privileges will be needed."
@@ -47,12 +45,12 @@ def _python_install_python_environment(run_local=True):
                             local("sudo pip install virtualenvwrapper")
             else:
                 print "virtualenvwrapper not installed"
+
+        # Check that virtualenvwrapper.sh has been correctly installed        
         with settings(warn_only=True):
-            if _blocal("workon").failed == True:
-                # find where virtualenvwrapper installed itself to
-                
-                # source virtualenvwrapper.sh to appropriate location
-                pass
+            if _blocal("workon").failed == True: # using blocal so that .profile gets loaded
+                # TODO find where virtualenvwrapper installed virtualenvwrapper.sh to 
+                local("echo \"source /usr/local/bin/virtualenvwrapper.sh\" >> ~/.profile")
 
                 
 def _python_check_interpreter_version(local=True):
