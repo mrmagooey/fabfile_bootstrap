@@ -2,7 +2,10 @@ from fabric.api import settings,env
 import os
 import imp # Helper functions for import
 import sys
-
+import unittest
+from fabric.contrib.files import exists
+from fabric.api import local,run,env,put,cd,sudo,settings,\
+     prefix,hosts,roles,get,hide,lcd
 
 # Load the parent fabfile
 fabfile_bootstrap_path = os.path.dirname(os.path.dirname(__file__))
@@ -24,12 +27,18 @@ REMOTE_DATABASE_BACKUP_DIRECTORY = os.path.join(REMOTE_USER_DIRECTORY, 'database
 
 VIRTUALENV_NAME = PROJECT_NAME
 
-env.key_filename = '~/.ssh/keyfile'
+#env.key_filename = '~/.ssh/keyfile'
+env.password = 'vagrant'
+# Number, box name
+# For multiple servers, need to increment and track port numbers 
+VAGRANT_APPLICATION_SERVERS = ['lucid32']*1
+
 
 env.roledefs = {
-    'application servers': ['user@server'], #i.e. ubuntu@127.0.0.1
+    'application servers': [], #i.e. ubuntu@127.0.0.1
     'database servers':[],
     'load balancers':[],
+    'vagrant test':['vagrant@127.0.0.1:4568'],
 }
 
 VIRTUALENV = PROJECT_NAME
@@ -43,26 +52,61 @@ try:
 except:
     pass
 
+
+    
 # Test variables #
 
+TEST_VM_PORT = 4568 # As defined in Vagrantfile
 TEST_DJANGO_PROJECT_LOCATION = os.path.join(os.path.dirname(__file__), 'test_project')
     
 # End variables definition #
 # Start custom fabric function definition #
 
-def test_setup_vagrant():
-    # Install vagrant?
-    local('vagrant box add lucid32 http://files.vagrantup.com/lucid32.box')
+# Vagrant Tests #
+
+    
+def test_vagrant_add_box(box_name, box_address):
+    if box_name == None:
+        raise Exception("No box_name specified for install")
+    local('vagrant box add %s %s'%(box_name,box_address))
+
+    
+def test_vagrant_setup():
+    test_vagrant_add_box('lucid32','http://files.vagrantup.com/lucid32.box')
     
     
-def test_vagrant_up(box=None):
-    if not box:
-        local('vagrant up lucid32')
+def test_vagrant_up(box=''):
+    local('vagrant up %s'%box)
     
 
-def test_build_django_project():
+def test_vagrant_destroy(box=''):
+    local('vagrant destroy %s'%box)
+
     
+@roles('vagrant test')
+def test_vagrant_lucid32():
+    """
+    Download the base lucid32 box (if not done so already), up and then destroy it.
+    """
+    with settings(warn_only=True):
+        test_vagrant_add_box('lucid32','http://files.vagrantup.com/lucid32.box')
+    test_vagrant_up('lucid32')
+    run('ls')
+    test_vagrant_destroy('lucid32')
+
+    
+class simpleTest(unittest.TestCase):
+    def setUp(self):
+        pass
+    def runTest(self):
+        pass
+
+    
+# Django Tests #    
+def test_build_django_project():
+#    test_vagrant_up('lucid32')
     fb._python_install_python_environment()
+
     
 ## Leave this at the bottom ##
 # Inject local variables into fabfile_bootstrap.fabfile module namespace #
