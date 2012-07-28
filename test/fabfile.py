@@ -18,7 +18,6 @@ fb = imp.load_module('fb',fab_file,fab_path,fab_description)
 LOCAL_PROJECT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 PROJECT_NAME = os.path.split(LOCAL_PROJECT_DIRECTORY)[1]
 
-    
 REMOTE_USER_DIRECTORY = '/path/to/user/home' #e.g. '/home/ubuntu/website', '/var/www/website/
 REMOTE_PROJECT_DIRECTORY = os.path.join(REMOTE_USER_DIRECTORY,'sites',PROJECT_NAME)
 REMOTE_REPOSITORY_DIRECTORY = os.path.join(REMOTE_USER_DIRECTORY,"git_repository")
@@ -29,16 +28,13 @@ VIRTUALENV_NAME = PROJECT_NAME
 
 #env.key_filename = '~/.ssh/keyfile'
 env.password = 'vagrant'
-# Number, box name
-# For multiple servers, need to increment and track port numbers 
-VAGRANT_APPLICATION_SERVERS = ['lucid32']*1
 
-
+# Any changes here need to be mirrored in the Vagrantfile
 env.roledefs = {
-    'application servers': [], #i.e. ubuntu@127.0.0.1
-    'database servers':[],
-    'load balancers':[],
-    'vagrant test':['vagrant@127.0.0.1:4568'],
+    'application servers': ['vagrant@127.0.0.1:4567'], #i.e. ubuntu@127.0.0.1
+    'database servers':['vagrant@127.0.0.1:4568'],
+    'load balancers':['vagrant@127.0.0.1:4569'],
+    'vagrant test':['vagrant@127.0.0.1:4570'],
 }
 
 VIRTUALENV = PROJECT_NAME
@@ -64,6 +60,8 @@ TEST_DJANGO_PROJECT_LOCATION = os.path.join(os.path.dirname(__file__), 'test_pro
 
 # Vagrant Tests #
 
+def test_vagrant_list_boxes():
+    pass
     
 def test_vagrant_add_box(box_name, box_address):
     if box_name == None:
@@ -94,12 +92,18 @@ def test_vagrant_lucid32():
     run('ls')
     test_vagrant_destroy('lucid32')
 
+
     
-class simpleTest(unittest.TestCase):
+class VagrantEnvironmentTest(unittest.TestCase):
     def setUp(self):
         pass
-    def runTest(self):
+    def test_vagrant_boxes_available(self):
+        test_vagrant
+    def test_vagrantUp(self):
         pass
+    def test_vagrantUp(self):
+        pass
+        
 
     
 # Django Tests #    
