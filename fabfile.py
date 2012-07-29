@@ -8,6 +8,9 @@ from fabric.contrib.files import exists
 from fabric.api import local,run,env,put,cd,sudo,settings,\
      prefix,hosts,roles,get,hide,lcd
 
+import sys
+sys.path.append(os.path.dirname(__file__))
+
 todays_date = datetime.date.today().strftime('%y%m%d')
 time_now = datetime.datetime.now().strftime("%y%m%d-%H%M")
 
