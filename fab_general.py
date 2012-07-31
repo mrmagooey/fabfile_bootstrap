@@ -7,7 +7,7 @@ import subprocess
 
 from fabric.operations import _prefix_commands, _prefix_env_vars, _AttributeString
 from fabric.state import output, win32
-from fabric.utils import error
+import fabric.utils 
 
 def _blocal(command, capture=False):
     """
@@ -51,7 +51,7 @@ def _blocal(command, capture=False):
     if p.returncode != 0:
         out.failed = True
         msg = "local() encountered an error (return code %s) while executing '%s'" % (p.returncode, command)
-        error(message=msg, stdout=out, stderr=err)
+        fabric.utils.error(message=msg, stdout=out, stderr=err)
     out.succeeded = not out.failed
     # If we were capturing, this will be a string; otherwise it will be None.
     return out
