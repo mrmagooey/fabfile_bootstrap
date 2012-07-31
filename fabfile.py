@@ -20,6 +20,7 @@ import_list = [
     'fab_python',
     'fab_git',
     'fab_postgres',
+    'fab_supervisor',
 ]
 
 for fab_module in import_list:
