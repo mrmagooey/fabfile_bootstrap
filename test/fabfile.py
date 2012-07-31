@@ -31,7 +31,7 @@ env.password = 'vagrant'
 
 # Any changes here need to be mirrored in the Vagrantfile
 env.roledefs = {
-    'application servers': ['vagrant@127.0.0.1:4567'], #i.e. ubuntu@127.0.0.1
+    'application servers': ['vagrant@127.0.0.1:4567'], 
     'database servers':['vagrant@127.0.0.1:4568'],
     'load balancers':['vagrant@127.0.0.1:4569'],
     'vagrant test':['vagrant@127.0.0.1:4570'],
