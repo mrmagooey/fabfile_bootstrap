@@ -3,29 +3,27 @@ from fabric.contrib.files import exists
 from fabric.api import local,run,env,put,cd,sudo,settings,\
      prefix,hosts,roles,get,hide,lcd
 
-def postgres_local_drop_user(user):
-    local('dropuser %s'%user)
-
-
-def postgres_local_drop_user(user):
+def _postgres_local_drop_user(user):
     local('dropuser %s'%user)
 
     
-def postgres_local_create_user(user,password):
-    child = pexpect.spawn('createuser -D -R -S -P %s'%user)
+def _postgres_local_create_user(user, password):
+    child = pexpect.spawn('createuser -d -R -S -P %s'%user)
     child.expect('Enter password for new role: ')
     child.sendline(password)
     child.expect('Enter it again: ')
     child.sendline(password)
 
     
-def postgres_local_create_database(db_owner, database_name):
+def _postgres_local_create_database(project_name):
+    db_owner = project_name
+    database_name = project_name
     local('createdb -O %s %s'%(db_owner, database_name))
 
 
-def postgres_local_setup_project_database(project_name):
-    postgres_local_create_user(project_name,password)
-    postgres_local_create_database(project_name)
+def postgres_local_setup_project_database(project_name, password):
+    _postgres_local_create_user(project_name, password)
+    _postgres_local_create_database(project_name)
 
 
 @roles('db')
