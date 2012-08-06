@@ -1,15 +1,17 @@
 from fabric.api import settings,env
 import os
-import fabfile_bootstrap.fabfile as fb
-import sys
 
+import sys
 
 LOCAL_PROJECT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 PROJECT_NAME = os.path.split(LOCAL_PROJECT_DIRECTORY)[1]
 
-REMOTE_USER_DIRECTORY = '/path/to/userdir' #e.g. '/home/ubuntu/website', '/var/www/website/
-REMOTE_PROJECT_DIRECTORY = os.path.join(REMOTE_USER_DIRECTORY,'sites',PROJECT_NAME)
-REMOTE_REPOSITORY_DIRECTORY = os.path.join(REMOTE_USER_DIRECTORY,"git_repo")
+REMOTE_USER_DIRECTORY = '/' #e.g. '/home/ubuntu/website', '/var/www/website/
+REMOTE_PROJECT_DIRECTORY = os.path.join(REMOTE_USER_DIRECTORY,'webapps',PROJECT_NAME)
+REMOTE_GIT_REPOSITORIES_DIRECTORY = os.path.join(REMOTE_USER_DIRECTORY,"git_repos")
+
+REMOTE_BARE_GIT_DIRECTORY = os.path.join(REMOTE_GIT_REPOSITORIES_DIRECTORY,
+                                                 PROJECT_NAME+'.git')
 
 REMOTE_DATABASE_BACKUP_DIRECTORY = os.path.join(REMOTE_USER_DIRECTORY, 'database_backups')
 
@@ -18,22 +20,34 @@ VIRTUALENV_NAME = PROJECT_NAME
 try:
     os.environ['DJANGO_SETTINGS_MODULE'] = '%s.settings'% PROJECT_NAME
     from django.conf import settings as django_settings
-    DATABASE_NAME = django_settings.DATABASES['default']['NAME']
-    DJANGO_APPS = []
+    LOCAL_DATABASE_NAME = django_settings.DATABASES['default']['NAME']
 except:
-    DATABASE_NAME = ''
-    
-env.key_filename = '~/.ssh/keyfile'
+    LOCAL_DATABASE_NAME = ''
+
+
+REMOTE_DATABASE_NAME = ''
+
+
+DJANGO_APPS = []
 
 env.roledefs = {
-    'application servers': ['user@server'], #i.e. ubuntu@127.0.0.1
+    'application servers': [''], #i.e. ubuntu@127.0.0.1
     'database servers':[],
     'load balancers':[],
 }
 
 # End variable definition #
-# Start custom fabric function definition #
 
+
+# Inject local variables into fabfile_bootstrap.fabfile module namespace #
+import fabfile_bootstrap.fabfile as fb
+for name in dir():
+    if not name.startswith('__'):
+        value = eval(name)
+        setattr(fb, name, value)
+from fabfile_bootstrap.fabfile import *
+
+# Start custom fabric function definition 
 def custom_server_setup(pypy=False):
     # Core system setup
     with settings(warn_only=True):
@@ -54,20 +68,9 @@ def custom_server_setup(pypy=False):
 
     #install python modules
     python_deps = ' '.join(_local_python_dependencies())
-    with prefix("workon %s"%cpython_virtualenv):
+    with prefix("workon %s"%VIRTUALENV_NAME):
         run("pip install %s"%python_deps)
 
     #Test a few things
     run("supervisorctl status")
 
-
-
-## Leave this at the bottom ##
-# Inject local variables into fabfile_bootstrap.fabfile module namespace #
-
-
-for name in dir():
-    if not name.startswith('__'):
-        value = eval(name)
-        setattr(fb, name, value)
-from fabfile_bootstrap.fabfile import *
