@@ -3,14 +3,12 @@ import os
 import datetime
 import re
 import subprocess
-
+import sys
 from fabric.contrib.files import exists
 from fabric.api import local,run,env,put,cd,sudo,settings,\
      prefix,hosts,roles,get,hide,lcd
 
-import sys
 sys.path.append(os.path.dirname(__file__))
-
 todays_date = datetime.date.today().strftime('%y%m%d')
 time_now = datetime.datetime.now().strftime("%y%m%d-%H%M")
 
@@ -25,17 +23,11 @@ import_list = [
 
 for fab_module in import_list:
     m = __import__(fab_module)
-    m._module_setup(import_list) # cross-links each fab module
+    m._module_setup(import_list) # cross-links functions from each fab module
     try:
         attrlist = m.__all__
     except AttributeError:
         attrlist = dir(m)
-        for attr in attrlist:
-            globals()[attr] = getattr(m, attr)
-
-
-
-
-
-    
+    for attr in attrlist:
+        globals()[attr] = getattr(m, attr)
 
