@@ -9,7 +9,7 @@ PROJECT_NAME = os.path.split(LOCAL_PROJECT_DIRECTORY)[1]
 
 REMOTE_USER_DIRECTORY = '/path/to/userdir' #e.g. '/home/ubuntu/website', '/var/www/website/
 REMOTE_PROJECT_DIRECTORY = os.path.join(REMOTE_USER_DIRECTORY,'sites',PROJECT_NAME)
-REMOTE_REPOSITORY_DIRECTORY = os.path.join(REMOTE_USER_DIRECTORY,"git_repository")
+REMOTE_REPOSITORY_DIRECTORY = os.path.join(REMOTE_USER_DIRECTORY,"git_repo")
 
 REMOTE_DATABASE_BACKUP_DIRECTORY = os.path.join(REMOTE_USER_DIRECTORY, 'database_backups')
 

@@ -1,4 +1,3 @@
-
 from fabric.contrib.files import exists
 from fabric.api import local,run,env,put,cd,sudo,settings,\
      prefix,hosts,roles,get,hide,lcd
@@ -7,16 +6,20 @@ import sys
 
 
 def _python_setup_virtualenvwrapper(run_local=True):
+    "Because I can never remember this set of steps"
+    # 
     if local:
-        if not _python_check_for_python_library('virtualenvwrapper'):
+        # check if it is already installed
+        if not _python_check_if_package_installed('virtualenvwrapper'):
             local('pip install virtualenvwrapper')
+            #add shell script to shell startup
     else:
-        # TODO
+        # TODO: all the work goes here
         pass
 
-def _python_virtualenv_path(run_local=True):
-    pass
-        
+def python_mkvirtualenv():
+    run("mkvirtualenv %s"%PROJECT_NAME)
+
 def _python_install_python_environment(run_local=True):
     """
     Install some minimum elements of the python ecosystem.
@@ -66,19 +69,23 @@ def _local_python_dependencies():
     return local("pip freeze",capture=True).split('\n')
 
     
-def _python_check_for_python_library(library):
+def _python_check_if_package_installed(library):
     if library in _local_python_dependencies():
         return True
     else:
         return False
 
-    
-def mirror_python_setup(use_git=False):
+
+@roles('application servers')    
+def python_mirror_virtualenv(use_git=False):
     "Mirrors the local python libraries to the server"
     # Decide whether or not to push a requirements.txt file to server
+    # Check remote virtualenv setup
+    if 'ERROR' in run('workon'):
+        
     if not use_git:
         python_deps = ' '.join(_local_python_dependencies())
-        with prefix("workon %s"%cpython_virtualenv):
+        with prefix("workon %s"%VIRTUALENV_NAME):
             run("pip install %s"%python_deps)
     else:
         local('pip freeze > requirements.txt')
@@ -87,7 +94,7 @@ def mirror_python_setup(use_git=False):
             local("git commit -m 'fab requirements.txt commit' requirements.txt")
             local('git push %s'%env['roles'])
             _remote_git_pull()
-            with prefix("workon %s"%cpython_virtualenv):
+            with prefix("workon %s"%VIRTUALENV_NAME):
                 with cd(REMOTE_PROJECT_DIRECTORY):
                     run("pip install -r requirements.txt")
 

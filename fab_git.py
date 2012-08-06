@@ -1,15 +1,16 @@
-
+import os
 from fabric.contrib.files import exists
-from fabric.api import local,run,env,put,cd,sudo,settings,\
-     prefix,hosts,roles,get,hide,lcd
+from fabric.api import local, run, env, put, cd, sudo, settings,\
+     prefix, hosts, roles, get, hide, lcd
 
 @roles('application servers')
-def git_deploy():
-    "Git based deployment with optional gunicorn restart"
-    with settings(warn_only=True):
+def git_deploy(commit=False):
+    "Git based deployment"
+    # TODO Run tests
+    if commit==True:
         local('git commit -a')
     local('git push')
-    _remote_git_pull()
+    git_remote_pull()
 
     
 @roles('application servers')    
@@ -19,13 +20,12 @@ def git_setup_remote():
     Sets up remote bare git repository in:
     ~/.../<REMOTE_PROJECT_BARE_GIT_DIRECTORY>/
     """
-
     if run("git --version 2>&1 >/dev/null && echo $?") == '0':
         print 'git is installed on remote server\n'
     else:
         raise Exception('git is not installed on remote server')
 
-    # Check for parent directory
+    # Check for bare git repo parent directory
     if not exists(REMOTE_GIT_REPOSITORIES_DIRECTORY):
         run("mkdir %s"%REMOTE_GIT_REPOSITORIES_DIRECTORY)
 
@@ -45,13 +45,32 @@ def git_setup_remote():
         run('mkdir %s'%REMOTE_BARE_GIT_DIRECTORY)
         with cd(REMOTE_BARE_GIT_DIRECTORY):
             run("git init --bare")
-    # Add 
+
+    # Add urls to local git remotes
     git_local_add_remote_urls()
     
-    
+    # Push local to new bare remote
+    git_push()
+
+    # Create working tree version in project folder
+    REMOTE_PROJECT_PARENT_DIRECTORY = os.path.dirname(REMOTE_PROJECT_DIRECTORY)
+    # Check if project directory exists
+    if not exists(REMOTE_PROJECT_PARENT_DIRECTORY):
+        run("mkdir --parents %s"%REMOTE_PROJECT_PARENT_DIRECTORY)
+
+    with cd(REMOTE_PROJECT_PARENT_DIRECTORY):
+        run('git clone %s %s'%(REMOTE_BARE_GIT_DIRECTORY,PROJECT_NAME))
+
+
+@roles('application servers')
+def git_push(local_repository='master'):
+    with lcd(LOCAL_PROJECT_DIRECTORY):
+        local("git push origin %s"%local_repository)
+
+            
 @roles('application servers')
 def git_local_add_remote_urls():
-    # Now add the remote address to the local git config
+    "Add the remote git repo addresses to the local git config"
     _GIT_URL_SPEC_PATH = env.host_string+":"+\
                          REMOTE_BARE_GIT_DIRECTORY.replace(REMOTE_USER_DIRECTORY,'')
     with lcd(LOCAL_PROJECT_DIRECTORY):
@@ -65,7 +84,7 @@ def git_local_add_remote_urls():
 
             
     
-def _git_pull():
+def git_remote_pull():
     with cd(REMOTE_PROJECT_DIRECTORY):
         run("git pull")
 

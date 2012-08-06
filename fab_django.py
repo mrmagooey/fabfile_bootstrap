@@ -3,10 +3,6 @@ from fabric.api import local,run,env,put,cd,sudo,settings,\
      prefix,hosts,roles,get,hide,lcd
 
 
-def django_manage(arg):
-    with prefix('workon %s'%cpython_virtualenv):
-        run(os.path.join(REMOTE_PROJECT_DIRECTORY,'python manage.py ', arg))
-
         
 def django_remote_collect_static():
     with prefix('workon %s'%VIRTUALENV_NAME):
@@ -14,7 +10,7 @@ def django_remote_collect_static():
 
         
 def django_remote_schemamigration_all():
-    for app in APPS:
+    for app in DJANGO_APPS:
         with prefix('workon %s'%VIRTUALENV_NAME):
             run('%s/manage.py schemamigration %s --auto'%(REMOTE_PROJECT_DIRECTORY,app))
 
