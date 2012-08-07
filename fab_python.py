@@ -82,7 +82,8 @@ def python_mirror_virtualenv(use_git=False):
     # Decide whether or not to push a requirements.txt file to server
     # Check remote virtualenv setup
     if 'ERROR' in run('workon'):
-        
+        # create new virtualenv
+        pass
     if not use_git:
         python_deps = ' '.join(_local_python_dependencies())
         with prefix("workon %s"%VIRTUALENV_NAME):
