@@ -12,7 +12,8 @@ def _postgres_local_create_user(user, password):
 
     child.expect('Enter it again:')
     child.sendline(password)
-    
+    child.sendline(password)
+
 def _postgres_local_create_database(db_name, db_owner):
     local('createdb -O %s %s'%(db_owner, db_name))
 
