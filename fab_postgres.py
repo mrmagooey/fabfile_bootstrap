@@ -4,31 +4,36 @@ from fabric.api import local,run,env,put,cd,sudo,settings,\
      prefix,hosts,roles,get,hide,lcd
 
     
-def postgres_local_create_user(user, password):
+def _postgres_local_create_user(user, password):
     child = pexpect.spawn('createuser -d -R -S -P %s'%user)
-    child.expect('Enter password for new role: ')
-    child.sendline(password)
-    child.expect('Enter it again: ')
+    child.setecho(False)
+    child.expect('Enter password for new role:')
     child.sendline(password)
 
+    child.expect('Enter it again:')
+    child.sendline(password)
     
-def postgres_local_create_database(project_name):
-    db_owner = project_name
-    database_name = project_name
-    local('createdb -O %s %s'%(db_owner, database_name))
+def _postgres_local_create_database(db_name, db_owner):
+    local('createdb -O %s %s'%(db_owner, db_name))
 
     
-def postgres_local_drop_user(user):
+def _postgres_local_drop_user(user):
     local('dropuser %s'%user)
 
     
-def postgres_local_drop_db(db):
+def _postgres_local_drop_db(db):
     local('dropdb %s'%db)
 
 
-def postgres_local_setup_project_database(project_name, password):
-    _postgres_local_create_user(project_name, password)
-    _postgres_local_create_database(project_name)
+def postgres_local_setup():
+    if LOCAL_DATABASE_USER == '':
+        raise Exception("No Database user specified in fabfile")
+    if LOCAL_DATABASE_NAME == '':
+        raise Exception("No Database name specified in fabfile")
+    if LOCAL_DATABASE_PASSWORD == '':
+        raise Exception("No Database password specified in fabfile")
+    _postgres_local_create_user(LOCAL_DATABASE_USER, LOCAL_DATABASE_PASSWORD)
+    #_postgres_local_create_database(LOCAL_DATABASE_NAME,LOCAL_DATABASE_USER)
 
 
 @roles('db')
