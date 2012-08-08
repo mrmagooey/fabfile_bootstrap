@@ -34,7 +34,7 @@ def postgres_local_setup():
     if LOCAL_DATABASE_PASSWORD == '':
         raise Exception("No Database password specified in fabfile")
     _postgres_local_create_user(LOCAL_DATABASE_USER, LOCAL_DATABASE_PASSWORD)
-    #_postgres_local_create_database(LOCAL_DATABASE_NAME,LOCAL_DATABASE_USER)
+    _postgres_local_create_database(LOCAL_DATABASE_NAME,LOCAL_DATABASE_USER)
 
 
 @roles('db')
