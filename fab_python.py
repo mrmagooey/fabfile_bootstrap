@@ -19,6 +19,7 @@ def _python_check_and_install_easy_install():
     # >/dev/null 'delete' both streams
     if not run("easy_install --help 2>&1 >/dev/null && echo $?") == '0':
         #TODO add OS (e.g mac, rpm, windows) robust install method for easy_install
+        # sudo("sudo yum install python-setuptools")
         sudo("sudo apt-get install python-setuptools")
 
 def _python_check_and_install_pip(virtualenv=None):
