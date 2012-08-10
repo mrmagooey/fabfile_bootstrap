@@ -16,6 +16,7 @@ time_now = datetime.datetime.now().strftime("%y%m%d-%H%M")
 import_list = [
     'fab_general',
     'fab_python',
+    'fab_mysql',
     'fab_git',
     'fab_postgres',
     'fab_supervisor',
