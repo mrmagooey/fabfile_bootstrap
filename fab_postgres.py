@@ -3,6 +3,15 @@ from fabric.contrib.files import exists
 from fabric.api import local,run,env,put,cd,sudo,settings,\
      prefix,hosts,roles,get,hide,lcd
 
+def _postgres_local_setup_pg_hba():
+    """
+    Update local postgres security file to allow local tcp/ip connections using md5 passwords
+    """
+    # TODO Find the postgres pg_hba directory
+    # TODO Add in "local all all md5"
+    # TODO Restart postgres
+    pass
+
     
 def _postgres_local_create_user(user, password):
     child = pexpect.spawn('createuser -d -R -S -P %s'%user)
