@@ -31,10 +31,10 @@ env.password = 'vagrant'
 
 # Any changes here need to be mirrored in the Vagrantfile
 env.roledefs = {
-    'application servers': ['vagrant@127.0.0.1:4567'], 
-    'database servers':['vagrant@127.0.0.1:4568'],
-    'load balancers':['vagrant@127.0.0.1:4569'],
-    'vagrant test':['vagrant@127.0.0.1:4570'],
+    'application_servers': ['vagrant@127.0.0.1:4567'], 
+    'database':['vagrant@127.0.0.1:4568'],
+    'load_balancer':['vagrant@127.0.0.1:4569'],
+    'vagrant_test':['vagrant@127.0.0.1:4570'],
 }
 
 VIRTUALENV = PROJECT_NAME
@@ -74,37 +74,51 @@ def test_vagrant_setup():
     
     
 def test_vagrant_up(box=''):
+    """
+    Will run through and start the specified vms defined in the Vagrantfile.
+    """
     local('vagrant up %s'%box)
     
 
 def test_vagrant_destroy(box=''):
-    local('vagrant destroy %s'%box)
+    local('vagrant destroy -f %s'%box)
 
     
-@roles('vagrant test')
-def test_vagrant_lucid32():
+@roles('vagrant_test')
+def test_vagrant_test():
     """
     Download the base lucid32 box (if not done so already), up and then destroy it.
     """
-    with settings(warn_only=True):
+    with settings(warn_only=True): # This will 'fail' if box is already downloaded
         test_vagrant_add_box('lucid32','http://files.vagrantup.com/lucid32.box')
-    test_vagrant_up('lucid32')
+    test_vagrant_up('vagrant_test')
     run('ls')
-    test_vagrant_destroy('lucid32')
+    test_vagrant_destroy('vagrant_test')
 
 
-    
-class VagrantEnvironmentTest(unittest.TestCase):
+class VagrantTest(unittest.TestCase):
     def setUp(self):
         pass
-    def test_vagrant_boxes_available(self):
-        test_vagrant
-    def test_vagrantUp(self):
-        pass
-    def test_vagrantUp(self):
-        pass
+        
+    @unittest.skip('shouldn\'t need to run this, takes forever')
+    def test_vagrant_yoyo(self):
+        test_vagrant_up()
+        test_vagrant_destroy()
+
+class GeneralTest(unittest.TestCase):
+    def setUp(self):
+        local('vagrant up %s'%'application_server')
+
+    def test_general():
+        # To test each fabric function, need to have the fabric env.host variable set
+        # Which would normally get set by a @roles decorator or using fab options
+        env.host = env.roledefs['application servers'][0]
+        general_upload('fabfile.py')
         
 
+class DjangoTest(unittest.TestCase):
+    def setUp(self):
+        pass
     
 # Django Tests #    
 def test_build_django_project():

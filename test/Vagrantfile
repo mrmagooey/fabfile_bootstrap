@@ -5,17 +5,17 @@ Vagrant::Config.run do |config|
     lucid32_config.vm.forward_port 22, 4567
   end
 
-  config.vm.define :db do |db_config|
+  config.vm.define :database do |db_config|
     db_config.vm.box = "lucid32"
     db_config.vm.forward_port 22, 4568
   end
 
-  config.vm.define :lb do |lb_config|
+  config.vm.define :load_balancer do |lb_config|
     lb_config.vm.box = "lucid32"
     lb_config.vm.forward_port 22, 4569
   end
 
-  config.vm.define :vt do |vt_config|
+  config.vm.define :vagrant_test do |vt_config|
     vt_config.vm.box = "lucid32"
     vt_config.vm.forward_port 22, 4570
   end
