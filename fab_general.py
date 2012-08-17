@@ -119,7 +119,7 @@ def _general_is_running(process):
             return True
     return False
 
-def general_upload(local_path,remote_path):
+def general_upload(local_path,remote_path="~/"):
     "'put' wrapper, checks local_path for absolute uri" 
     if not os.path.isabs(local_path):
         local_file_path = os.path.abspath(local_path)
