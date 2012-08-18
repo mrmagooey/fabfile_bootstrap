@@ -103,15 +103,6 @@ def python_test():
     print general_test()
 
 
-def _module_setup(import_list):
-    for fab_module in import_list:
-        m = __import__(fab_module)
-        try:
-            attrlist = m.__all__
-        except AttributeError:
-            attrlist = dir(m)
-            for attr in attrlist:
-                globals()[attr] = getattr(m, attr)
 
 def _python_local_setup_virtualenvwrapper():
     "Because I can never remember this set of steps"
@@ -123,4 +114,6 @@ def _python_local_setup_virtualenvwrapper():
     else:
         # TODO: all the work goes here
         pass
+
+
                 

@@ -92,12 +92,3 @@ def postgres_download_remote_pg_backup():
     _generate_remote_pg_dump()
     _download_remote_pg_dump()
 
-def _module_setup(import_list):
-    for fab_module in import_list:
-        m = __import__(fab_module)
-        try:
-            attrlist = m.__all__
-        except AttributeError:
-            attrlist = dir(m)
-            for attr in attrlist:
-                globals()[attr] = getattr(m, attr)

@@ -8,28 +8,16 @@ from fabric.contrib.files import exists
 from fabric.api import local,run,env,put,cd,sudo,settings,\
      prefix,hosts,roles,get,hide,lcd
 
-sys.path.append(os.path.dirname(__file__))
+# Put this directory at the start of the PYTHONPATH
+sys.path = [os.path.dirname(__file__)] + sys.path
+
 todays_date = datetime.date.today().strftime('%y%m%d')
 time_now = datetime.datetime.now().strftime("%y%m%d-%H%M")
 
-# Change this to reflect what fabric commands you want to use
-import_list = [
-    'fab_general',
-    'fab_python',
-    'fab_mysql',
-    'fab_git',
-    'fab_postgres',
-    'fab_supervisor',
-]
-
-
-for fab_module in import_list:
-    m = __import__(fab_module)
-    m._module_setup(import_list) # cross-links functions from each fab module
-    try:
-        attrlist = m.__all__
-    except AttributeError:
-        attrlist = dir(m)
-    for attr in attrlist:
-        globals()[attr] = getattr(m, attr)
+from fab_general import *
+from fab_python import *
+from fab_mysql import *
+from fab_git import *
+from fab_postgres import *
+from fab_supervisor import *
 

@@ -48,13 +48,3 @@ def supervisor_supervisorctl(arg):
         print "This command needs a supervisorctl argument."
 
 
-def _module_setup(import_list):
-    for fab_module in import_list:
-        m = __import__(fab_module)
-        try:
-            attrlist = m.__all__
-        except AttributeError:
-            attrlist = dir(m)
-        for attr in attrlist:
-            globals()[attr] = getattr(m, attr)
-
