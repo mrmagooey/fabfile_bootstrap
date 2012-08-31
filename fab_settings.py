@@ -24,9 +24,7 @@ try:
 except:
     LOCAL_DATABASE_NAME = ''
 
-
 REMOTE_DATABASE_NAME = ''
-
 
 DJANGO_APPS = []
 

@@ -20,20 +20,18 @@ def _postgres_local_create_user(user, password):
     child.sendline(password)
 
     child.expect('Enter it again:')
+    # TODO work why this needs to be here twice
     child.sendline(password)
     child.sendline(password)
 
 def _postgres_local_create_database(db_name, db_owner):
     local('createdb -O %s %s'%(db_owner, db_name))
-
     
 def _postgres_local_drop_user(user):
     local('dropuser %s'%user)
-
     
 def _postgres_local_drop_db(db):
     local('dropdb %s'%db)
-
 
 def postgres_local_setup():
     if LOCAL_DATABASE_USER == '':
@@ -47,27 +45,27 @@ def postgres_local_setup():
 
 
 @roles('db')
-def postgres_db_backup():
-    "Creates a local database dump of the project database using -O flag"
-    filename = os.path.join(os.path.dirname(__file__),'postgresdumps/%screatedb.postgdump'%time_now)
-    local('pg_dump -O %s > %s'%(database_name,filename))
+def postgres_local_db_backup():
+    "Creates a local database dump of the project database, returns filename of backup"
+    filename = os.path.join(os.path.dirname(__file__),
+                            'local_postgresdumps/%s_%s.postgdump'%(PROJECT_NAME,time_now))
+    local('pg_dump %s > %s'%(database_name,filename))
     return filename
 
-    
+# TODO fix this 
 @roles('db')
-def postgres_upload_local_db():
+def _postgres_upload_local_db():
     "Creates local pg_dump, copies to remote server."
-    db_filepath = db_backup()
+    db_filepath = postgres_local_db_backup()
     db_filename = os.path.split(db_filepath)[1]
-    remote_directory = '/home/ubuntu/postgresdumps'
-    if not exists(remote_directory):
+    if not exists(REMOTE_DATABASE_BACKUP_DIRECTORY):
         run('mkdir %s'%remote_directory)
     remote_file = os.path.join(remote_directory, db_filename)
     upload(db_filepath,remote_file)
 
 @roles('db')
 def _postgres_load_latest_dbdump_file():
-    "Doesn't work - Loads latest file in postgresdumps directory into server."
+    "Loads latest file in postgresdumps directory into server."
     file = _latest_file_in_directory('postgresdumps')
     sudo('psql < %s'%file,user='postgres')
 

@@ -2,7 +2,6 @@ from fabric.contrib.files import exists
 from fabric.api import local,run,env,put,cd,sudo,settings,\
      prefix,hosts,roles,get,hide,lcd
 import os
-import sys
 import platform
 import subprocess
 
@@ -120,7 +119,9 @@ def _general_is_running(process):
             return True
     return False
 
-def general_upload(local_path,remote_path="~/"):
+
+# TODO wtf is going on here
+def general_upload(local_path,remote_path):
     "'put' wrapper, checks local_path for absolute uri" 
     if not os.path.isabs(local_path):
         local_file_path = os.path.abspath(local_path)
@@ -130,3 +131,12 @@ def general_upload(local_path,remote_path="~/"):
     put(local_path,remote_path)
 
 
+def _module_setup(import_list):
+    for fab_module in import_list:
+        m = __import__(fab_module)
+        try:
+            attrlist = m.__all__
+        except AttributeError:
+            attrlist = dir(m)
+            for attr in attrlist:
+                globals()[attr] = getattr(m, attr)
