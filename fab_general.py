@@ -4,6 +4,7 @@ from fabric.api import local,run,env,put,cd,sudo,settings,\
 import os
 import platform
 import subprocess
+import re
 
 from fabric.operations import _prefix_commands, _prefix_env_vars, _AttributeString
 from fabric.state import output, win32
@@ -12,7 +13,7 @@ import fabric.utils
 def _blocal(command, capture=False):
     """
     Slightly modified version of fabrics 'local' function designed
-    to make the underlying subprocess.Popen call use bash.
+    to make the underlying subprocess.Popen call use bash rather than sh
 
     Taken from fabric operations.py file.
     """
@@ -56,35 +57,25 @@ def _blocal(command, capture=False):
     # If we were capturing, this will be a string; otherwise it will be None.
     return out
 
-def _general_shell_name(run_local=True):
-    if run_local:
-        shell_path = local("echo $SHELL",capture=True)
-        if 'zsh' in shell_path:
-            return 'zsh'
-        if 'bash' in shell_path:
-            return 'bash'
-        if 'csh' in shell_path:
-            return 'csh'
-    else:
-        # TODO
-        raise Exception
-        
-def _general_os_name(run_local=True):
-    if run_local:
-        return _general_os_details(local=True)[0]
-    else:
-        # TODO
-        pass
 
-        
-def _general_os_details(run_local=True):
-    if run_local:
-        return platform.uname()
-    else:
-        pass
+def _general_local_shell_name():
+    shell_path = local("echo $SHELL",capture=True)
+    if 'zsh' in shell_path:
+        return 'zsh'
+    if 'bash' in shell_path:
+        return 'bash'
+    if 'csh' in shell_path:
+        return 'csh'
 
-        
-def _general_latest_file_in_directory(path, run_local=True):
+    
+def _general_os_name(run_local=False):
+    if run_local:
+        return local('uname',capture=True)
+    else:
+        return run('uname')
+
+
+def _general_latest_file_in_directory(path, run_local=False):
     "Returns absolute path to most recent file in directory"
     if run_local:
         # TODO properly test this
@@ -100,8 +91,7 @@ def _general_latest_file_in_directory(path, run_local=True):
             file_path = os.path.join(path,file)
             return file_path
         
-
-def _general_check_or_create_directory(path,use_sudo=False):
+def _general_check_or_create_directory(path, use_sudo=False):
     if not exists(path):
         print "not exists %s"%path
         if use_sudo:
@@ -109,7 +99,7 @@ def _general_check_or_create_directory(path,use_sudo=False):
     else:
         run("mkdir %s"%path)
 
-def _general_is_running(process):
+def _general_process_is_running(process):
     "Checks ps output for process name"
     with hide('output'):
         s = run("ps auwx")
@@ -119,6 +109,8 @@ def _general_is_running(process):
             return True
     return False
 
+
+# TODO wtf is going on here
 def general_upload(local_path,remote_path):
     "'put' wrapper, checks local_path for absolute uri" 
     if not os.path.isabs(local_path):

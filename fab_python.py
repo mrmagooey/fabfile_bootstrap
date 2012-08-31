@@ -4,7 +4,6 @@ from fabric.api import local,run,env,put,cd,sudo,settings,\
 from fabfile import *
 import sys
 
-# Assumes that python is installed on the target system
 
 def python_mkvirtualenv(virtualenv_name=None):
     if virtualenv_name:
@@ -12,26 +11,33 @@ def python_mkvirtualenv(virtualenv_name=None):
     else:
         run("mkvirtualenv %s"%PROJECT_NAME)
 
+@roles('application servers')
+def _python_check_and_install_virtualenvwrapper():
+    _python_check_and_install_easy_install()
+    _python_check_and_install_pip()
+    
+    sudo('pip install virtualenvwrapper')
+    run("echo \"source /usr/local/bin/virtualenvwrapper.sh\" >> ~/.bash_profile")
     
 def _python_check_and_install_easy_install():
     # easy_install --help should return a status code 0 if it runs
     # 2>&1 = combine error stream (2) with ordinary output
     # >/dev/null 'delete' both streams
     if not run("easy_install --help 2>&1 >/dev/null && echo $?") == '0':
+        print "easy_install installed on target machine\n "
         #TODO add OS (e.g mac, rpm, windows) robust install method for easy_install
         # sudo("sudo yum install python-setuptools")
         sudo("sudo apt-get install python-setuptools")
 
-def _python_check_and_install_pip(virtualenv=None):
+def _python_check_and_install_pip():
     _python_check_and_install_easy_install()
-    if not run("pip --help 2>&1 >/dev/null && echo $?") == '0':
+    if run("pip --help 2>&1 >/dev/null && echo $?") != '0':
         run("easy_install pip")
     
 def _python_local_install_python_environment():
     """
     Install some minimum elements of the python ecosystem.
     """
-    _python_check_and_install_easy_install()
     try:
         import pip
     except ImportError:
@@ -75,32 +81,38 @@ def _python_check_if_package_installed(library):
         return False
 
 
+
 @roles('application servers')    
 def python_mirror_virtualenv(use_git=False):
     "Mirrors the local python libraries to the server"
     # Decide whether or not to push a requirements.txt file to server
     # Check remote virtualenv setup
-    if 'ERROR' in run('workon'):
-        # create new virtualenv
-        pass
-        if not use_git:
-            python_deps = ' '.join(_local_python_dependencies())
+    # if 'ERROR' in run('workon'):
+    #     # create new virtualenv
+    #     pass
+    if not use_git:
+        deps = _local_python_dependencies()
+        for dep in deps:
+            if 'pygraphviz' in dep:
+                print 'pygraphviz is NOT being installed, organise graphviz yourself'
+                deps.remove(dep)
+        python_deps = ' '.join(deps)
+        with prefix("workon %s"%VIRTUALENV_NAME):
+            run("pip install %s"%python_deps)
+    else:
+        local('pip freeze > requirements.txt')
+        with settings(warn_only=True):
+            local("git add requirements.txt")
+            local("git commit -m 'fab requirements.txt commit' requirements.txt")
+            local('git push %s'%env['roles'])
+            _remote_git_pull()
             with prefix("workon %s"%VIRTUALENV_NAME):
-                run("pip install %s"%python_deps)
-        else:
-            local('pip freeze > requirements.txt')
-            with settings(warn_only=True):
-                local("git add requirements.txt")
-                local("git commit -m 'fab requirements.txt commit' requirements.txt")
-                local('git push %s'%env['roles'])
-                _remote_git_pull()
-                with prefix("workon %s"%VIRTUALENV_NAME):
-                    with cd(REMOTE_PROJECT_DIRECTORY):
-                        run("pip install -r requirements.txt")
+                with cd(REMOTE_PROJECT_DIRECTORY):
+                    run("pip install -r requirements.txt")
 
-
+@roles('application servers')
 def python_test():
-    print general_test()
+    print 'pip' in run('pydoc modules')
 
 
 def _module_setup(import_list):
