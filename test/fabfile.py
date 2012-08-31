@@ -37,7 +37,6 @@ env.roledefs = {
 
 VIRTUALENV = PROJECT_NAME
 
-
 try:
     import django
     os.environ['DJANGO_SETTINGS_MODULE'] = '%s.settings'% PROJECT_NAME
@@ -49,8 +48,10 @@ except:
 
 
 # Test variables #
-TEST_VM_PORT = 4568 # As defined in Vagrantfile
-TEST_DJANGO_PROJECT_LOCATION = os.path.join(os.path.dirname(__file__), 'test_project')
+TEST_LOCAL_DIRECTORY = os.path.dirname(__file__)
+TEST_APPLICATIONS_DIRECTORY = os.path.join(TEST_LOCAL_DIRECTORY, 'test_applications')
+TEST_DJANGO_PROJECT_LOCATION = os.path.join(TEST_APPLICATIONS_DIRECTORY, 'test_django_project')
+
 # End variables definition #
 # Vagrant Tests #
 
@@ -90,10 +91,22 @@ def test_vagrant_test():
     run('ls')
     test_vagrant_destroy('vagrant_test')
 
-    
 def test_test():
-    return dir()
-
+    local('pwd')
+    os.chdir(os.path.join(LOCAL_PROJECT_DIRECTORY,'../'))
+    local('pwd')
+    
+def test_create_django_application():
+    # create a django application in the test_applications directory
+    # git init
+    # Need to run the fabfile functions as if they were in the submodule
+    
+    if local('mkdir %s'%TEST_APPLICATIONS_DIRECTORY).failed:
+        print 'directory already exists'
+#    local('mkdir %s'%TEST_DJANGO_PROJECT_LOCATION)
+    with lcd(TEST_APPLICATIONS_DIRECTORY):
+        local('./django-admin.py')
+    
     
 # Inject local variables into fabfile_bootstrap.fabfile module namespace #
 for name in dir():
@@ -115,8 +128,8 @@ class VagrantTest(unittest.TestCase):
 class GeneralTest(unittest.TestCase):
     def setUp(self):
         test_vagrant_up('application_server')
-        
-        
+
+
     def tearDown(self):
         test_vagrant_destroy('application_server')
 
@@ -129,11 +142,19 @@ class GeneralTest(unittest.TestCase):
 
 
 class DjangoTest(unittest.TestCase):
+    """
+    
+    """
+    
     def setUp(self):
         test_vagrant_up('application_server')
-        
+
         
     def tearDown(self):
         test_vagrant_destroy('application_server')
-
-
+        
+        
+    def test_django_remote_collect_static():
+        pass
+        
+        

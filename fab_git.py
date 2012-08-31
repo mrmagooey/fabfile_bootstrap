@@ -3,7 +3,7 @@ from fabric.contrib.files import exists
 from fabric.api import local, run, env, put, cd, sudo, settings,\
      prefix, hosts, roles, get, hide, lcd
 
-@roles('application servers')
+@roles('application_server')
 def git_deploy(commit=False):
     "Git based deployment"
     # TODO Run tests
@@ -12,19 +12,32 @@ def git_deploy(commit=False):
     local('git push')
     git_remote_pull()
 
+@roles('application_server')
+def _git_is_installed(run_local=False):
+    if run_local:
+        if run("git --version 2>&1 >/dev/null && echo $?") == '0':
+            print 'git is installed on the local server\n'
+            return True
+        else:
+            return False
+    else:
+        if run("git --version 2>&1 >/dev/null && echo $?") == '0':
+            print 'git is installed on remote server\n'
+            return True
+        else:
+            return False
     
-@roles('application servers')    
+@roles('application_server')    
 def git_setup_remote():
     """
     Set up remote git repository and install urls into local config as origin
     Sets up remote bare git repository in:
     ~/.../<REMOTE_PROJECT_BARE_GIT_DIRECTORY>/
     """
-    if run("git --version 2>&1 >/dev/null && echo $?") == '0':
-        print 'git is installed on remote server\n'
-    else:
-        raise Exception('git is not installed on remote server')
 
+    if not _git_is_installed():
+        raise Exception("git isn't installed")
+        
     # Check for bare git repo parent directory
     if not exists(REMOTE_GIT_REPOSITORIES_DIRECTORY):
         run("mkdir %s"%REMOTE_GIT_REPOSITORIES_DIRECTORY)
@@ -62,13 +75,13 @@ def git_setup_remote():
         run('git clone %s %s'%(REMOTE_BARE_GIT_DIRECTORY,PROJECT_NAME))
 
 
-@roles('application servers')
+@roles('application_server')
 def git_push(local_repository='master'):
     with lcd(LOCAL_PROJECT_DIRECTORY):
         local("git push origin %s"%local_repository)
 
             
-@roles('application servers')
+@roles('application_server')
 def git_local_add_remote_urls():
     "Add the remote git repo addresses to the local git config"
     _GIT_URL_SPEC_PATH = env.host_string+":"+\
@@ -82,7 +95,6 @@ def git_local_add_remote_urls():
             if _GIT_URL_SPEC_PATH not in local("git remote -v",capture=True):
                 local("git remote set-url --add origin %s"%_GIT_URL_SPEC_PATH)
 
-            
     
 def git_remote_pull():
     with cd(REMOTE_PROJECT_DIRECTORY):
@@ -107,5 +119,11 @@ def _git_server_name_is_git_remote():
             return False
     return True
 
-    
+def _git_local_add_submodule(submodule_directory):
+    if not _git_is_installed(run_local=True):
+        raise Exception("git is not installed locally")
+
+    #TODO
+    raise Exception("not yet implemented")
+        
     
