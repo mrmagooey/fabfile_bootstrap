@@ -2,3 +2,5 @@
 test/.vagrant
 \#*\#
 .#*
+*.DS_Store
+
