@@ -2,15 +2,14 @@ import os
 from fabric.contrib.files import exists
 from fabric.api import local, run, env, put, cd, sudo, settings,\
      prefix, hosts, roles, get, hide, lcd
+from fab_general import task, log_call
 
 @roles('application_server')
-def git_deploy(commit=False):
+def git_push_pull():
     "Git based deployment"
-    # TODO Run tests
-    if commit==True:
-        local('git commit -a')
     local('git push')
     git_remote_pull()
+
 
 @roles('application_server')
 def _git_is_installed(run_local=False):
@@ -26,8 +25,8 @@ def _git_is_installed(run_local=False):
             return True
         else:
             return False
-    
-@roles('application_server')    
+
+@roles('application_server')
 def git_setup_remote():
     """
     Set up remote git repository and install urls into local config as origin
@@ -37,50 +36,63 @@ def git_setup_remote():
 
     if not _git_is_installed():
         raise Exception("git isn't installed")
-        
+
     # Check for bare git repo parent directory
-    if not exists(REMOTE_GIT_REPOSITORIES_DIRECTORY):
-        run("mkdir %s"%REMOTE_GIT_REPOSITORIES_DIRECTORY)
+    run('mkdir -p %s'%env.remote_git_repository_path)
 
     # Check for existence of git repo directory
-    if exists(REMOTE_BARE_GIT_DIRECTORY):
-        with cd(REMOTE_BARE_GIT_DIRECTORY):
-            # Check if git repo directory is in fact a bare git repo
-            if 'bare' not in run('cat config | grep bare'):
-                print """The git repository directory exists but is not a *bare* git repository.
-                
-                You should ssh in, check what it is and possibly do any ssh setup manually,
-                changing your REMOTE_GIT_REPOSITORIES_DIRECTORY
-                and REMOTE_PROJECT_BARE_GIT_DIRECTORY to reflect any changes made."""
-            else:
-                print "git repository already exists at %s"%REMOTE_BARE_GIT_DIRECTORY 
-    else: # bare git directory doesn't exist, safe to create from scratch
-        run('mkdir %s'%REMOTE_BARE_GIT_DIRECTORY)
-        with cd(REMOTE_BARE_GIT_DIRECTORY):
-            run("git init --bare")
+    with cd(env.remote_git_repository_path):
+        run("git init --bare", )
 
     # Add urls to local git remotes
     git_local_add_remote_urls()
-    
+
     # Push local to new bare remote
     git_push()
 
     # Create working tree version in project folder
-    REMOTE_PROJECT_PARENT_DIRECTORY = os.path.dirname(REMOTE_PROJECT_DIRECTORY)
+    remote_parent_directory = os.path.dirname(env.proj_path)
     # Check if project directory exists
-    if not exists(REMOTE_PROJECT_PARENT_DIRECTORY):
-        run("mkdir --parents %s"%REMOTE_PROJECT_PARENT_DIRECTORY)
+    run("mkdir -p %s"%remote_parent_directory)
 
-    with cd(REMOTE_PROJECT_PARENT_DIRECTORY):
-        run('git clone %s %s'%(REMOTE_BARE_GIT_DIRECTORY,PROJECT_NAME))
+    with cd(remote_parent_directory):
+        run('git clone %s %s'%(env.remote_git_repository_path, env.project_name))
 
 
+@task
+@log_call
+def _clone_git_repository():
+    if exists(env.proj_path):
+        return 
+    if env.deploy_key:
+        deploy_key_local_path = os.path.join(os.path.dirname(__file__), 
+                                              'deploy', env.deploy_key)
+        upload_template(deploy_key_local_path, '~/.ssh/')
+        run("chmod 600 ~/.ssh/%s"% env.deploy_key)
+        # Add key to .ssh/config
+        try: 
+            repo_url = env.repo_url.split('@')[1]
+        except IndexError:
+            repo_url = env.repo_url
+        hostname = repo_url.split(':')[0] # TODO make this more robust, possibly not all urls use :
+        repository_name = env.repo_url.split(':')[1]
+        ssh_config_string = """
+Host git_repo
+    Hostname %s
+    User git
+    IdentityFile ~/.ssh/%s
+        """ % (hostname, env.deploy_key)
+        append('~/.ssh/config', ssh_config_string)
+        run("git clone ssh://git_repo/%s %s" % (repository_name, env.proj_path))
+    else:
+        run("git clone %s %s" % (env.repo_url, env.proj_path))
+        
 @roles('application_server')
 def git_push(local_repository='master'):
     with lcd(LOCAL_PROJECT_DIRECTORY):
         local("git push origin %s"%local_repository)
 
-            
+
 @roles('application_server')
 def git_local_add_remote_urls():
     "Add the remote git repo addresses to the local git config"
@@ -91,13 +103,13 @@ def git_local_add_remote_urls():
         if 'origin' not in local("git remote -v", capture=True):
             local("git remote add origin %s"%_GIT_URL_SPEC_PATH)
         else:
-            # check current host url against [origin] in .git/config  
+            # check current host url against [origin] in .git/config
             if _GIT_URL_SPEC_PATH not in local("git remote -v",capture=True):
                 local("git remote set-url --add origin %s"%_GIT_URL_SPEC_PATH)
 
-    
+
 def git_remote_pull():
-    with cd(REMOTE_PROJECT_DIRECTORY):
+    with cd(env.proj_path):
         run("git pull")
 
 
@@ -105,12 +117,12 @@ def git_fix_divergent_remote_git_repository():
     "Useful to fix 'Your branch and origin/master have diverged'"
     run('git reset --hard origin/master')
 
-    
+
 def git_fix_non_branched_remote_git_repository():
     "Useful to fix 'Not currently on any branch'"
     run('git stash && git checkout master')
 
-    
+
 def _git_server_name_is_git_remote():
     names = env['roles']
     git_remote_names =  local('git remote',capture=True).split("\n")
@@ -125,5 +137,6 @@ def _git_local_add_submodule(submodule_directory):
 
     #TODO
     raise Exception("not yet implemented")
-        
-    
+
+def test():
+    print env.hosts

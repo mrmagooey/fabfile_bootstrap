@@ -1,13 +1,111 @@
 from fabric.contrib.files import exists
 from fabric.api import local,run,env,put,cd,sudo,settings,\
-     prefix,hosts,roles,get,hide,lcd
+     prefix,hosts,roles,get,hide,lcd, task
 import os
 import platform
 import subprocess
-
+import re
+from functools import wraps
 from fabric.operations import _prefix_commands, _prefix_env_vars, _AttributeString
 from fabric.state import output, win32
 import fabric.utils 
+from fabric.colors import yellow, green, blue, red
+
+templates = {
+    "nginx": {
+        "local_path": "deploy/nginx.conf",
+        "remote_path": "/etc/nginx/sites-enabled/%(proj_name)s.conf",
+        "reload_command": "service nginx restart",
+    },
+    "supervisor": {
+        "local_path": "%(path_to_bootstrap)s/deploy/supervisor.conf",
+        "remote_path": "/etc/supervisor/conf.d/%(proj_name)s.conf",
+        "reload_command": "supervisorctl reload",
+    },
+    "cron": {
+        "local_path": "deploy/crontab",
+        "remote_path": "/etc/cron.d/%(proj_name)s",
+        "owner": "root",
+        "mode": "600",
+    },
+    "gunicorn": {
+        "local_path": "deploy/gunicorn.conf.py",
+        "remote_path": "%(proj_path)s/gunicorn.conf.py",
+    },
+    "settings": {
+        "local_path": "deploy/live_settings.py",
+        "remote_path": "%(proj_path)s/local_settings.py",
+    },
+}
+env.path_to_bootstrap = os.path.dirname(__file__)
+
+def get_templates():
+    """
+    Returns each of the templates with env vars injected.
+    """
+    injected = {}
+    for name, data in templates.items():
+        injected[name] = dict([(k, v % env) for k, v in data.items()])
+    return injected
+
+
+def _print(output):
+    """
+    From Mezzanine
+    """
+    print
+    print output
+    print
+
+
+def print_command(command):
+    """
+    From Mezzanine
+    """
+    _print(blue("$ ", bold=True) +
+           yellow(command, bold=True) +
+           red(" ->", bold=True))
+
+def log_call(func):
+    """
+    From Mezzanine
+    """
+    @wraps(func)
+    def logged(*args, **kawrgs):
+        header = "-" * len(func.__name__)
+        _print(green("\n".join([header, func.__name__, header]), bold=True))
+        return func(*args, **kawrgs)
+    return logged
+
+
+@task
+def general_apt(packages):
+    """
+    Installs one or more system packages via apt.
+    From Mezzanine
+    """
+    return sudo("apt-get install -y -q " + packages)
+
+    
+@task
+@log_call
+def general_install():
+    """
+    Installs the base system and Python requirements for the entire server.
+    From Mezzanine
+    """
+    locale = "LC_ALL=%s" % env.locale
+    with hide("stdout"):
+        if locale not in sudo("cat /etc/default/locale"):
+            sudo("update-locale %s" % locale)
+            run("exit")
+    sudo("apt-get update -y -q")
+    general_apt("nginx libjpeg-dev python-dev python-setuptools git-core "
+        "postgresql libpq-dev memcached supervisor emacs graphviz tmux")
+    sudo('apt-get upgrade -y -q')
+    sudo("easy_install pip")
+    sudo("pip install virtualenv mercurial")
+
 
 def _blocal(command, capture=False):
     """
@@ -58,7 +156,7 @@ def _blocal(command, capture=False):
 
 def _general_shell_name(run_local=True):
     if run_local:
-        shell_path = local("echo $SHELL",capture=True)
+        shell_path = local("echo $SHELL", capture=True)
         if 'zsh' in shell_path:
             return 'zsh'
         if 'bash' in shell_path:
@@ -109,7 +207,7 @@ def _general_check_or_create_directory(path,use_sudo=False):
     else:
         run("mkdir %s"%path)
 
-def _general_is_running(process):
+def general_is_running(process):
     "Checks ps output for process name"
     with hide('output'):
         s = run("ps auwx")
@@ -120,23 +218,4 @@ def _general_is_running(process):
     return False
 
 
-# TODO wtf is going on here
-def general_upload(local_path,remote_path):
-    "'put' wrapper, checks local_path for absolute uri" 
-    if not os.path.isabs(local_path):
-        local_file_path = os.path.abspath(local_path)
-    else:
-        local_file_path = local_path
-        local_file = os.path.split(local_file_path)[1]
-    put(local_path,remote_path)
 
-
-def _module_setup(import_list):
-    for fab_module in import_list:
-        m = __import__(fab_module)
-        try:
-            attrlist = m.__all__
-        except AttributeError:
-            attrlist = dir(m)
-            for attr in attrlist:
-                globals()[attr] = getattr(m, attr)
