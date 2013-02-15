@@ -1,11 +1,12 @@
 from fabric.contrib.files import exists
 from fabric.api import local,run,env,put,cd,sudo,settings,\
-     prefix,hosts,roles,get,hide,lcd
+     prefix,hosts,roles,get,hide,lcd, task
 
 
-def django_remote_collect_static():
-    with prefix('workon %s'%VIRTUALENV_NAME):
-        run("yes yes | %s/manage.py collectstatic"%REMOTE_PROJECT_DIRECTORY)
+def django_collectstatic():
+    """
+    """
+    run("%s/manage.py collectstatic -v 0 --noinput"%env.django_path)
 
         
 def django_remote_schemamigration_all():

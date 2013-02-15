@@ -1,4 +1,4 @@
-from fabric.contrib.files import exists
+from fabric.contrib.files import exists, upload_template
 from fabric.api import local,run,env,put,cd,sudo,settings,\
      prefix,hosts,roles,get,hide,lcd, task
 import os
@@ -13,7 +13,7 @@ from fabric.colors import yellow, green, blue, red
 
 templates = {
     "nginx": {
-        "local_path": "deploy/nginx.conf",
+        "local_path": "%(path_to_bootstrap)s/deploy/nginx.conf",
         "remote_path": "/etc/nginx/sites-enabled/%(proj_name)s.conf",
         "reload_command": "service nginx restart",
     },
@@ -23,21 +23,21 @@ templates = {
         "reload_command": "supervisorctl reload",
     },
     "cron": {
-        "local_path": "deploy/crontab",
+        "local_path": "%(path_to_bootstrap)s/deploy/crontab",
         "remote_path": "/etc/cron.d/%(proj_name)s",
         "owner": "root",
         "mode": "600",
     },
     "gunicorn": {
-        "local_path": "deploy/gunicorn.conf.py",
+        "local_path": "%(path_to_bootstrap)s/deploy/gunicorn.conf.py",
         "remote_path": "%(proj_path)s/gunicorn.conf.py",
     },
-    "settings": {
-        "local_path": "deploy/live_settings.py",
-        "remote_path": "%(proj_path)s/local_settings.py",
+    "django_local_settings": {
+        "local_path": "%(path_to_bootstrap)s/deploy/local_settings.py",
+        "remote_path": "%(django_path)s/%(django_name)s/local_settings.py",
     },
 }
-env.path_to_bootstrap = os.path.dirname(__file__)
+
 
 def get_templates():
     """
@@ -47,6 +47,38 @@ def get_templates():
     for name, data in templates.items():
         injected[name] = dict([(k, v % env) for k, v in data.items()])
     return injected
+
+    
+def upload_template_and_reload(name):
+    """
+    Uploads a template only if it has changed, and if so, reload a
+    related service.
+    """
+    template = get_templates()[name]
+    local_path = template["local_path"]
+    remote_path = template["remote_path"]
+    reload_command = template.get("reload_command")
+    owner = template.get("owner")
+    mode = template.get("mode")
+    remote_data = ""
+    if exists(remote_path):
+        with hide("stdout"):
+            remote_data = sudo("cat %s" % remote_path)
+    with open(local_path, "r") as f:
+        local_data = f.read()
+        # if "%(db_pass)s" in local_data:
+        #     env.db_pass = db_pass()
+        local_data %= env
+    clean = lambda s: s.replace("\n", "").replace("\r", "").strip()
+    if clean(remote_data) == clean(local_data):
+        return
+    upload_template(local_path, remote_path, env, use_sudo=True, backup=False)
+    if owner:
+        sudo("chown %s %s" % (owner, remote_path))
+    if mode:
+        sudo("chmod %s %s" % (mode, remote_path))
+    if reload_command:
+        sudo(reload_command)
 
 
 def _print(output):
@@ -86,7 +118,7 @@ def general_apt(packages):
     """
     return sudo("apt-get install -y -q " + packages)
 
-    
+
 @task
 @log_call
 def general_install():
