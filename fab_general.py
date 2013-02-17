@@ -121,7 +121,8 @@ def general_apt(packages):
 
 @task
 @log_call
-def general_install():
+@roles('application_servers')
+def general_install_web():
     """
     Installs the base system and Python requirements for the entire server.
     From Mezzanine
@@ -132,13 +133,54 @@ def general_install():
             sudo("update-locale %s" % locale)
             run("exit")
     sudo("apt-get update -y -q")
-    general_apt("nginx libjpeg-dev python-dev python-setuptools git-core "
-        "postgresql libpq-dev memcached supervisor emacs graphviz tmux")
+    general_apt("libjpeg-dev python-dev python-setuptools git-core "
+        "libpq-dev supervisor emacs graphviz tmux")
     sudo('apt-get upgrade -y -q')
     sudo("easy_install pip")
     sudo("pip install virtualenv mercurial")
+    
+    
+@task
+@log_call
+@roles('database')
+def general_install_database():
+    """
+    Installs the base system and Python requirements for the entire server.
+    From Mezzanine
+    """
+    locale = "LC_ALL=%s" % env.locale
+    with hide("stdout"):
+        if locale not in sudo("cat /etc/default/locale"):
+            sudo("update-locale %s" % locale)
+            run("exit")
+    sudo("apt-get update -y -q")
+    if env.db_type == "postgres":
+        general_apt("postgresql")
+    elif env.db_type == "postgres":
+        general_apt("mysql")
+    elif env.db_type == 'sqlite3':
+        pass
+    sudo('apt-get upgrade -y -q')
 
 
+@task
+@log_call
+@roles('database')
+def general_install_load_balancers():
+    """
+    installs the base system and python requirements for the entire server.
+    from mezzanine
+    """
+    locale = "lc_all=%s" % env.locale
+    with hide("stdout"):
+        if locale not in sudo("cat /etc/default/locale"):
+            sudo("update-locale %s" % locale)
+            run("exit")
+    sudo("apt-get update -y -q")
+    general_apt("nginx")
+    sudo('apt-get upgrade -y -q')
+    
+    
 def _blocal(command, capture=False):
     """
     Slightly modified version of fabrics 'local' function designed
@@ -186,7 +228,8 @@ def _blocal(command, capture=False):
     # If we were capturing, this will be a string; otherwise it will be None.
     return out
 
-def _general_shell_name(run_local=True):
+    
+def general_shell_name(run_local=True):
     if run_local:
         shell_path = local("echo $SHELL", capture=True)
         if 'zsh' in shell_path:
@@ -199,22 +242,8 @@ def _general_shell_name(run_local=True):
         # TODO
         raise Exception
         
-def _general_os_name(run_local=True):
-    if run_local:
-        return _general_os_details(local=True)[0]
-    else:
-        # TODO
-        pass
-
         
-def _general_os_details(run_local=True):
-    if run_local:
-        return platform.uname()
-    else:
-        pass
-
-        
-def _general_latest_file_in_directory(path, run_local=True):
+def general_latest_file_in_directory(path, run_local=True):
     "Returns absolute path to most recent file in directory"
     if run_local:
         # TODO properly test this
@@ -231,7 +260,7 @@ def _general_latest_file_in_directory(path, run_local=True):
             return file_path
         
 
-def _general_check_or_create_directory(path,use_sudo=False):
+def general_check_or_create_directory(path,use_sudo=False):
     if not exists(path):
         print "not exists %s"%path
         if use_sudo:
@@ -239,6 +268,7 @@ def _general_check_or_create_directory(path,use_sudo=False):
     else:
         run("mkdir %s"%path)
 
+        
 def general_is_running(process):
     "Checks ps output for process name"
     with hide('output'):
