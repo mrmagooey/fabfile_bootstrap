@@ -34,7 +34,7 @@ templates = {
     },
     "django_local_settings": {
         "local_path": "%(path_to_bootstrap)s/deploy/local_settings.py",
-        "remote_path": "%(django_path)s/%(django_name)s/local_settings.py",
+        "remote_path": "%(django_path)s/local_settings.py",
     },
 }
 
@@ -111,7 +111,7 @@ def log_call(func):
 
 
 @task
-def general_apt(packages):
+def apt_install(packages):
     """
     Installs one or more system packages via apt.
     From Mezzanine
@@ -122,7 +122,7 @@ def general_apt(packages):
 @task
 @log_call
 @roles('application_servers')
-def general_install_web():
+def install_web():
     """
     Installs the base system and Python requirements for the entire server.
     From Mezzanine
@@ -133,7 +133,7 @@ def general_install_web():
             sudo("update-locale %s" % locale)
             run("exit")
     sudo("apt-get update -y -q")
-    general_apt("libjpeg-dev python-dev python-setuptools git-core "
+    apt_install("libjpeg-dev python-dev python-setuptools git-core "
         "libpq-dev supervisor emacs graphviz tmux")
     sudo('apt-get upgrade -y -q')
     sudo("easy_install pip")
@@ -143,7 +143,7 @@ def general_install_web():
 @task
 @log_call
 @roles('database')
-def general_install_database():
+def install_database():
     """
     Installs the base system and Python requirements for the entire server.
     From Mezzanine
@@ -154,10 +154,10 @@ def general_install_database():
             sudo("update-locale %s" % locale)
             run("exit")
     sudo("apt-get update -y -q")
-    if env.db_type == "postgres":
-        general_apt("postgresql")
-    elif env.db_type == "postgres":
-        general_apt("mysql")
+    if env.db_type == "postgresql_psycopg2":
+        apt_install("postgres")
+    elif env.db_type == "mysql":
+        apt_install("mysql")
     elif env.db_type == 'sqlite3':
         pass
     sudo('apt-get upgrade -y -q')
@@ -166,7 +166,7 @@ def general_install_database():
 @task
 @log_call
 @roles('database')
-def general_install_load_balancers():
+def install_load_balancers():
     """
     installs the base system and python requirements for the entire server.
     from mezzanine

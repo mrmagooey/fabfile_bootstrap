@@ -1,14 +1,25 @@
-from fabric.contrib.files import exists
+from fabric.contrib.files import exists, upload_template
 from fabric.api import local,run,env,put,cd,sudo,settings,\
      prefix,hosts,roles,get,hide,lcd, task
+import fab_general
 
+__all__ = ['collectstatic', 'upload_local_settings']
 
-def django_collectstatic():
+@task
+@roles('application_servers')
+def collectstatic():
     """
     """
     run("%s/manage.py collectstatic -v 0 --noinput"%env.django_path)
-
-        
+    
+@task
+@roles('application_servers')
+def upload_local_settings():
+    """
+    """
+    fab_general.upload_template_and_reload('django_local_settings')
+    
+    
 def django_remote_schemamigration_all():
     for app in DJANGO_APPS:
         with prefix('workon %s'%VIRTUALENV_NAME):
