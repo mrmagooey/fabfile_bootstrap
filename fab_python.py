@@ -3,8 +3,7 @@ from fabric.api import local,run,env,put,cd,sudo,settings,\
     prefix,hosts,roles,get,hide,lcd, task
 import sys
 from contextlib import contextmanager
-from fab_general import _blocal
-from fab_git import git_remote_pull
+# from fab_git import git_remote_pull
 
 @task
 @roles('application_servers')
@@ -14,9 +13,8 @@ def python_mkvirtualenv(virtualenv_name=None):
     else:
         run("mkvirtualenv %s"%env.proj_name)
 
-        
 @contextmanager
-def python_virtualenv():
+def activate_virtualenv():
     """
     Runs commands within the project's virtualenv.
     """
@@ -30,7 +28,7 @@ def python_pip(packages):
     """
     Installs one or more Python packages within the virtual environment.
     """
-    with python_virtualenv():
+    with activate_virtualenv():
         return sudo("pip install %s" % packages)
 
 @task            
@@ -60,7 +58,7 @@ def python_dependencies(run_local=True):
     if run_local:
         return local("pip freeze",capture=True).split('\n')
     else:
-        with python_virtualenv():
+        with activate_virtualenv():
             return run("pip freeze",capture=True).split('\n')
 
             
