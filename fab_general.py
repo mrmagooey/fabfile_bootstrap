@@ -2,7 +2,6 @@ from fabric.contrib.files import exists, upload_template
 from fabric.api import local,run,env,put,cd,sudo,settings,\
      prefix,hosts,roles,get,hide,lcd, task
 import os
-import platform
 import subprocess
 import re
 from functools import wraps
@@ -10,6 +9,11 @@ from fabric.operations import _prefix_commands, _prefix_env_vars, _AttributeStri
 from fabric.state import output, win32
 import fabric.utils 
 from fabric.colors import yellow, green, blue, red
+from fab_python import activate_virtualenv
+from contextlib import contextmanager
+
+__all__ = ['get_templates', 'upload_template_and_reload', 'log_call', 'project']
+
 
 templates = {
     "nginx": {
@@ -80,6 +84,16 @@ def upload_template_and_reload(name):
     if reload_command:
         sudo(reload_command)
 
+@contextmanager
+def project():
+    """
+    Runs commands within the project's directory.
+    """
+    with activate_virtualenv():
+        with cd(env.proj_path):
+            run('git checkout django_backend')
+        with cd(env.django_path):
+            yield
 
 def _print(output):
     """
@@ -97,6 +111,7 @@ def print_command(command):
     _print(blue("$ ", bold=True) +
            yellow(command, bold=True) +
            red(" ->", bold=True))
+
 
 def log_call(func):
     """

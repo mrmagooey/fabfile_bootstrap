@@ -6,7 +6,7 @@ import fab_postgres
 import fab_supervisor
 import fab_django
 import fab_nginx
-from contextlib import contextmanager
+
 from fabric.api import env
 import os
 
@@ -61,15 +61,5 @@ def fabfile_bootstrap_init(conf):
     }
     env.path_to_bootstrap = os.path.dirname(__file__)
 
-@contextmanager
-def project():
-    """
-    Runs commands within the project's directory.
-    """
-    with python_virtualenv():
-        with cd(env.proj_path):
-            run('git checkout django_backend')
-        with cd(env.django_path):
-            yield
 
 
