@@ -4,6 +4,7 @@ from fabric.api import local, run, env, put, cd, sudo, settings,\
      prefix, hosts, roles, get, hide, lcd
 from fab_general import task, log_call
 
+@task
 @roles('application_servers')
 def git_push_pull():
     "Git based deployment"
