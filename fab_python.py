@@ -52,29 +52,31 @@ def python_check_and_install_pip():
     if run("pip --help 2>&1 >/dev/null && echo $?") != '0':
         run("easy_install pip")
     
-                
-def python_dependencies(run_local=True):
+@task
+def dependencies():
     # Will return the dependencies of whatever virtualenv is active when fab is called
-    if run_local:
-        return local("pip freeze",capture=True).split('\n')
-    else:
-        with activate_virtualenv():
-            return run("pip freeze",capture=True).split('\n')
+    
+    try:
+        deps = local("pip freeze", capture=True).split('\n')
+    except Exception as ex:
+        print ex
+        raise ex
+    print deps
+    return deps
 
             
-def python_check_if_package_installed(library):
-    raise Exception
-    if library in python_dependencies():
+def check_if_package_installed(library):
+    if library in dependencies():
         return True
     else:
         return False
 
 @task
 @roles('application_servers')    
-def python_mirror_virtualenv(use_git=False):
+def mirror_virtualenv(use_git=False):
     "Mirrors the local python libraries to the server"
     if not use_git:
-        deps = python_dependencies()
+        deps = dependencies()
         python_deps = ' '.join(deps)
         with prefix("workon %s"%env.proj_name):
             run("pip install %s"%python_deps)
